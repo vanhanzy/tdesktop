@@ -15,18 +15,39 @@ jobs:
         with:
           submodules: true
 
-      - name: Instalar dependencias
+      - name: Instalar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias manualmente
         run: |
-          choco install cmake ninja python3 perl nasm git -y
+          Invoke-WebRequest -Uri "https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.msi" -OutFile "C:\strawberry.msi"
+          Start-Process msiexec.exe -ArgumentList '/i C:\strawberry.msi /quiet /norestart' -Wait
+          [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Strawberry\perl\bin", [System.EnvironmentVariableTarget]::Machine)
+
+          Invoke-WebRequest -Uri "https://www.nasm.us/pub/nasm/releasebuilds/2.16.3/win64/nasm-2.16.3-installer-x64.exe" -OutFile "C:\nasm.exe"
+          Start-Process -FilePath "C:\nasm.exe" -ArgumentList "/S" -Wait
+          [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Program Files\NASM", [System.EnvironmentVariableTarget]::Machine)
+
+      - name: Instalar vcpkg y librerías necesarias
+        run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           cd C:\vcpkg && bootstrap-vcpkg.bat
           C:\vcpkg\vcpkg install openssl zlib --triplet x64-windows
+
+      - name: Instalar Qt 6
+        run: |
+          Invoke-WebRequest -Uri "https://download.qt.io/official_releases/qt/6.5/6.5.2/qt-opensource-windows-x86-64-6.5.2.exe" -OutFile "C:\qt-installer.exe"
+          Start-Process -FilePath "C:\qt-installer.exe" -ArgumentList "/S" -Wait
+          [System.Environment]::SetEnvironmentVariable("QT_DIR", "C:\Qt\6.5.2\msvc2019_64", [System.EnvironmentVariableTarget]::Machine)
+          [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Qt\6.5.2\msvc2019_64\bin", [System.EnvironmentVariableTarget]::Machine)
 
       - name: Configurar y Compilar
         run: |
           mkdir build
           cd build
-          cmake .. -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+          cmake .. -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_PREFIX_PATH="C:\Qt\6.5.2\msvc2019_64"
           ninja
       
       - name: Guardar el ejecutable
