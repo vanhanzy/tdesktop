@@ -1,0 +1,36 @@
+name: Compile Telegram Desktop
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Clonar el código fuente
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Instalar dependencias
+        run: |
+          choco install cmake ninja python3 perl nasm git -y
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          cd C:\vcpkg && bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg install openssl zlib --triplet x64-windows
+
+      - name: Configurar y Compilar
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+          ninja
+      
+      - name: Guardar el ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: TelegramDesktop
+          path: build/bin/Release/Telegram.exe
