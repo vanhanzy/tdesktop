@@ -85,7 +85,9 @@ private:
 	[[nodiscard]] int appConfigLimit(
 		const QString &key,
 		int fallback) const;
-	[[nodiscard]] bool isPremium() const;
+	[[nodiscard]] bool isPremium() const {
+		return true; // 🔥 SIEMPRE PREMIUM 🔥
+	}
 
 	const not_null<Main::Session*> _session;
 
